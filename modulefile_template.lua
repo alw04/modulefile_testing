@@ -60,9 +60,9 @@ return function(M)
         (module_path:match("/reference/containers/modulefiles/") and pathJoin("/reference/containers", M.name, M.version))
 
     if not M.base then
-        LmodError("Could not determine base path for module " .. M.name .. "/" .. M.version)
+        LmodError("Installation directory could not be determined! Set M.base explicitly or fix modulefile path.")
     elseif not isDir(M.base) then
-        LmodError("Base directory does not exist: " .. M.base)
+        LmodError("Installation directory does not exist: " .. M.base)
     end
 
     -- Prepend standard subdirectories if they exist
