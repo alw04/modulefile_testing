@@ -4,6 +4,7 @@ return function(M)
     local defaults = {
         name = nil,
         version = nil,
+        base = nil,
         description = nil,
         usage_notes = "",
         libraries_used = "",
@@ -53,26 +54,19 @@ return function(M)
         LmodError("Module version could not be determined! Set M.version explicitly or fix modulefile path.")
     end
 
-    -- Determine base install path from modulefile location
-    local base
-    if module_path:match("/software/el9/modulefiles/") then
-	    base = pathJoin("/software/el9/apps", M.name, M.version)
-    elseif module_path:match("/reference/containers/modulefiles/") then
-        base = pathJoin("/reference/containers", M.name, M.version)
-    end
+    -- Determine base install path
+    M.base = M.base or
+        (module_path:match("/software/el9/modulefiles/") and pathJoin("/software/el9/apps", M.name, M.version)) or
+        (module_path:match("/reference/containers/modulefiles/") and pathJoin("/reference/containers", M.name, M.version))
 
-    if M.base then
-        base = M.base
-    end
-
-    if not base then
+    if not M.base then
         LmodError("Could not determine base path for module " .. M.name .. "/" .. M.version)
-    elseif not isDir(base) then
-        LmodError("Base directory does not exist: " .. base)
+    elseif not isDir(M.base) then
+        LmodError("Base directory does not exist: " .. M.base)
     end
 
     -- Prepend standard subdirectories if they exist
-    if base then
+    if M.base then
         local dir_env_map = {
             bin = {"PATH"},
             include = {"CPATH", "CMAKE_INCLUDE_PATH"},
@@ -84,7 +78,7 @@ return function(M)
         }
 
         for subdir, env_vars in pairs(dir_env_map) do
-            local full_path = pathJoin(base, subdir)
+            local full_path = pathJoin(M.base, subdir)
             if isDir(full_path) then
                 for _, var in ipairs(env_vars) do
                     prepend_path(var, full_path)
