@@ -73,5 +73,10 @@ modulefile_template({
     "{{ module }}"{% if not loop.last %},{% endif -%}
     {% endfor -%}
   },
+  required_modules = {
+    {% for module in depends_on %}
+    "{{ module }}"{% if not loop.last %},{% endif -%}
+    {% endfor -%}
+  },
   {% endif -%}
 })
