@@ -94,7 +94,7 @@ return function(M)
             if isDir(value) then
                 prepend_path(var, value)
             elseif mode() == "load" then
-                LmodMessage("Warning: path does not exist: " .. value)
+                LmodWarning(("Path does not exist: %s"):format(value))
             end
         end
     end
@@ -131,7 +131,7 @@ return function(M)
                 local csh_cmd = 'singularity exec ' .. path .. ' ' .. cmd .. ' $*'
                 set_shell_function(cmd, bash_cmd, csh_cmd)
             elseif mode() == "load" then
-                LmodMessage("Warning: container file not found for shell function '" .. cmd .. "': " ..path)
+                LmodWarning(("Container file not found for shell function '%s': %s"):format(cmd, path))
             end
         end
     end
