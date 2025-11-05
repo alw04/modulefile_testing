@@ -1,4 +1,4 @@
-local modulefile_template = loadfile("{{ modulefile_template_path }}")()
+local modulefile_template = loadfile("{{ lmod_template_path }}")()
 
 {% if load is defined %}
 {% for module in load %}
