@@ -91,7 +91,11 @@ return function(M)
     -- Add custom paths if provided
     if M.prepend_paths then
         for var, value in pairs(M.prepend_paths) do
-            prepend_path(var, value)
+            if isDir(value) then
+                prepend_path(var, value)
+            elseif mode() == "load" then
+                LmodMessage("Warning: path does not exist: " .. value)
+            end
         end
     end
 
@@ -122,9 +126,13 @@ return function(M)
     if M.shell_functions then
         for _, cmd in ipairs(M.shell_functions) do
             local path = pathJoin("$CONTAINERS", M.name, M.version, cmd .. "-" .. M.version .. ".sif")
-            local bash_cmd = 'singularity exec ' .. path .. ' ' .. cmd .. ' "$@"'
-            local csh_cmd = 'singularity exec ' .. path .. ' ' .. cmd .. ' $*'
-            set_shell_function(cmd, bash_cmd, csh_cmd)
+            if isFile(path) then
+                local bash_cmd = 'singularity exec ' .. path .. ' ' .. cmd .. ' "$@"'
+                local csh_cmd = 'singularity exec ' .. path .. ' ' .. cmd .. ' $*'
+                set_shell_function(cmd, bash_cmd, csh_cmd)
+            elseif mode() == "load" then
+                LmodMessage("Warning: container file not found for shell function '" .. cmd .. "': " ..path)
+            end
         end
     end
 
