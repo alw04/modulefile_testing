@@ -17,7 +17,7 @@ return function(M)
         build_date = "unknown",
         prepend_paths = {},
         env_vars = {},
-        -- load_modules = {},
+        required_modules = {},
         shell_functions = {},
         conflicts = {}
     }
@@ -113,14 +113,31 @@ return function(M)
         end
     end
 
-    -- if M.load_modules then
-    --     for _, module in ipairs(M.load_modules) do
-    --         -- if not isloaded(module) then
-    --             load(module)
-    --             -- LmodMessage(("Loaded dependency module: %s"):format(module))
-    --         -- end
-    --     end
-    -- end
+    -- Load any module dependencies
+    if mode() == "load" and M.required_modules then
+        for _, module in ipairs(M.required_modules) do
+            if not isloaded(module) then
+                if not isAvail(module) then
+                    LmodError(("Required dependency module not found: %s"):format(module))
+                end
+                depends_on(module)
+                LmodMessage(("Loaded dependency module: %s"):format(module))
+            end
+        end
+    end
+
+    -- Similarly unload any module dependencies
+    -- lmod normally handles this automatically with depends_on()
+    -- but this may not work correctly using this script
+    -- so the dependencies are managed manually
+    if mode() == "unload" and M.required_modules then
+        for _, module in ipairs(M.required_modules) do
+            if isloaded(module) then
+                unload(module)
+                LmodMessage(("Unloaded dependency module: %s"):format(module))
+            end
+        end
+    end
 
     -- Create shell functions for containers
     if M.shell_functions then
