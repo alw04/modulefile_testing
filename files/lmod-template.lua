@@ -171,7 +171,7 @@ return function(M)
 
 %sTesting:%s
 --------
-$ module load %s/%s
+module load %s/%s
 %s
 
 --

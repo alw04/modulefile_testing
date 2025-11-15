@@ -1,0 +1,7 @@
+name: "tmux"
+version: "3.3a"
+source: "https://github.com/tmux/{{ name }}/releases/download/{{ version }}/{{ software_file }}"
+
+description: "A terminal multiplexer that enables a number of terminals to be accessed and controlled from a single terminal"
+testing: "tmux --help"
+website: "http://tmux.org"

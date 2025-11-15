@@ -1,0 +1,18 @@
+- name: "Build {{ name }} - Configure"
+  command: "{{ build_configure_cmd }}"
+  args:
+    chdir: "{{ build_path }}"
+  when: not software_skip
+
+- name: "Build {{ name }} - Make"
+  command: "{{ build_make_cmd }}"
+  args:
+    chdir: "{{ build_path }}"
+  when: not software_skip
+
+- name: "Build {{ name }} - Install"
+  command: "{{ build_install_cmd }}"
+  args:
+    chdir: "{{ build_path }}"
+  become: yes
+  when: not software_skip

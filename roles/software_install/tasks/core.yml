@@ -1,0 +1,47 @@
+- name: "Compute base path for {{ name }}"
+  set_fact:
+    base_path: "{{ containers_path if container | default(false) else software_path }}"
+
+- name: "Compute installed path for {{ name }}"
+  set_fact:
+    installed_path: >-
+      {{
+        (
+        [base_path, 'apps', name] + ([version] if version is defined else [])
+        if not (container | default(false))
+        else
+        [base_path, name] + ([version] if version is defined else [])
+        ) | join('/')
+      }}
+
+- name: "Check if {{ name }} is already installed"
+  stat:
+    path: "{{ installed_path }}"
+  register: software_installed
+
+- name: Set software skip flag
+  set_fact:
+    software_skip: "{{ software_installed.stat.exists and not force_rebuild }}"
+
+- name: "Set installation directories for {{ name }}"
+  set_fact:
+    install_dirs: >-
+      {{
+        (default_container_dirs if container | default(false) else default_software_dirs)
+        + (extra_dirs | default([]))
+      }}
+
+- name: "Create installation directories for {{ name }}"
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop: "{{ install_dirs }}"
+  when: not software_skip
+
+- name: "Create modulefile for {{ name }}"
+  template:
+    src: "lmod-template.j2"
+    dest: "{{ ([base_path, 'modulefiles', name] + ([version] if version is defined else [])) | join('/') }}.lua"
+    mode: "0644"
+  when: not software_skip

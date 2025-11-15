@@ -1,0 +1,4 @@
+software_groups_mapping:
+  common:
+    - tmux
+    - virtualenv

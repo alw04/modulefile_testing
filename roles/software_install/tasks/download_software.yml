@@ -1,0 +1,12 @@
+- name: "Set download path for {{ name }}"
+  set_fact:
+    download_path: >-
+      {{ ([base_path, 'downloads', name] + ([version] if version is defined else [])) | join('/') }}
+
+- name: "Download {{ name }}"
+  get_url:
+    url: "{{ source }}"
+    dest: "{{ download_path }}/{{ software_file }}"
+    mode: "0755"
+    force: no
+  when: not software_skip

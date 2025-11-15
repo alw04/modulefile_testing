@@ -1,0 +1,28 @@
+software_path: "/software/el9"
+containers_path: "/reference/containers"
+
+archive_ext: "tar.gz"
+software_file: >-
+  {{
+    name
+    ~ ( '-' ~ version if version is defined else '' )
+    ~ '.' ~ archive_ext
+  }}
+
+default_container_dirs:
+  - "{{ ([base_path, name] + ([version] if version is defined else [])) | join('/') }}"
+  - "{{ ([base_path, 'modulefiles', name] + ([version] if version is defined else [])) | join('/') }}"
+
+default_software_dirs:
+  - "{{ ([base_path, 'apps', name] + ([version] if version is defined else [])) | join('/') }}"
+  - "{{ ([base_path, 'downloads', name] + ([version] if version is defined else [])) | join('/') }}"
+  - "{{ ([base_path, 'builds', name] + ([version] if version is defined else [])) | join('/') }}"
+  - "{{ ([base_path, 'modulefiles', name] + ([version] if version is defined else [])) | join('/') }}"
+
+extract_strip_components: 1
+
+build_configure_cmd: "./configure --prefix={{ installed_path }}"
+build_make_cmd: "make -j {{ ansible_processor_vcpus | default(4) }}"
+build_install_cmd: "make install"
+
+force_rebuild: false

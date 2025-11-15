@@ -1,0 +1,15 @@
+- include_role:
+    name: software_install
+    tasks_from: core
+
+- include_role:
+    name: software_install
+    tasks_from: download_software
+
+- include_role:
+    name: software_install
+    tasks_from: extract_software
+
+- include_role:
+    name: software_install
+    tasks_from: build_software

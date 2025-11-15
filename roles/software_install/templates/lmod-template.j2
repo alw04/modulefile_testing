@@ -42,9 +42,13 @@ modulefile_template({
   {% endif -%}
   {% if built_by is defined %}
   built_by = "{{ built_by }}",
+  {% else %}
+  built_by = "IASTATE",
   {% endif -%}
   {% if build_date is defined %}
   build_date = "{{ build_date }}",
+  {% else %}
+  build_date = "{{ ansible_date_time.date }}",
   {% endif -%}
   {% if prepend_paths is defined %}
   prepend_paths = {

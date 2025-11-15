@@ -1,0 +1,58 @@
+- hosts: localhost
+  become: true
+  gather_facts: yes
+
+  vars_files:
+    - vars/software_groups.yml
+
+  vars:
+    lmod_template_path: "/etc/modulefiles/lmod-template.lua"
+
+    software: ""
+    software_groups: ""
+
+    software_list: "{{ software.split(',') if software != '' else [] }}"
+    software_groups_list: "{{ software_groups.split(',') if software_groups != '' else [] }}"
+
+    group_software: >-
+      {{
+        software_groups_list | map('trim') | map('lower') | map('extract', software_groups_mapping) | sum(start=[])
+      }}
+
+    software_to_install: "{{ (software_list + group_software) | unique }}"
+
+    invalid_groups: "{{ software_groups_list | difference(software_groups_mapping.keys() | list) }}"
+
+  tasks:
+    - name: "Fail if invalid software groups are provided"
+      fail:
+        msg: |
+          The follow software groups do not exist: {{ invalid_groups }}
+
+          Available software groups: {{ software_groups_mapping.keys() | list }}
+      when: invalid_groups | length > 0
+
+    - name: "Check if any software was selected"
+      fail:
+        msg: |
+          No software or software groups were selected.
+          To install software, provide one or more software names or software groups, for example:
+
+            ansible-playbook site.yml -e "software=tmux,python_3"
+            ansible-playbook site.yml -e "software_groups=common,sequence_tools"
+
+          Available software groups: {{ software_groups_mapping.keys() | list }}
+      when: software_to_install | length == 0
+
+    - name: "Ensure Lmod template exists on remote"
+      copy:
+        src: "lmod-template.lua"
+        dest: "{{ lmod_template_path }}"
+        mode: "0644"
+
+    - name: "Install selected software"
+      include_role:
+        name: "{{ software_name }}"
+      loop: "{{ software_to_install }}"
+      loop_control:
+        loop_var: software_name

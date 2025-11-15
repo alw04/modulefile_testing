@@ -1,0 +1,15 @@
+- name: "Set build path for {{ software_name }}"
+  set_fact:
+    build_path: >-
+      {{ ([base_path, 'builds', software_name] + ([software_version] if software_version is defined else [])) | join('/') }}
+  when: not software_skip
+
+- name: "Extract {{ software_name }} to build directory"
+  unarchive:
+    src: "{{ download_path }}/{{ software_file }}"
+    dest: "{{ build_path }}"
+    copy: no
+    mode: "0755"
+    extra_opts:
+      - "--strip-components={{ extract_strip_components }}"
+  when: not software_skip

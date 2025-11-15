@@ -1,0 +1,26 @@
+- hosts: localhost
+  become: true
+  gather_facts: no
+
+  vars_files:
+    - vars/software_groups.yml
+
+  vars:
+    software: ""
+    software_groups: ""
+
+    software_to_install: >-
+      {{
+        (
+        (software.split(',') if software != '' else []) +
+        ((software_groups.split(',') if software_groups != '' else [] )| map ('trim') | map('lower') | map('extract', software_groups_mapping) | sum(start=[]))
+        ) | unique
+      }}
+
+  tasks:
+    - name: "Install selected software"
+      include_role:
+        name: "{{ software_name }}"
+      loop: "{{ software_to_install }}"
+      loop_control:
+        loop_var: software_name
