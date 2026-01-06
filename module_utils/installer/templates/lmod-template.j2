@@ -1,0 +1,6 @@
+local modulefile_template = loadfile("{{ lmod_template_path }}")()
+
+modulefile_template({
+  name = "{{ name }}",
+  version = "{{ version }}",
+})

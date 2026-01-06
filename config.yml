@@ -1,0 +1,6 @@
+---
+download_path: "/home/alw04/test/downloads"
+build_path: "/home/alw04/test/builds"
+install_path: "/home/alw04/test/apps"
+modulefile_path: "/home/alw04/test/modulefiles"
+lmod_template_path: "/home/alw04/v2/module_utils/installer/templates/lmod-template.lua"

@@ -1,0 +1,248 @@
+return function(M)
+
+    -- Default values for the module
+    local defaults = {
+        name = nil,
+        version = nil,
+        install_path = nil,
+        description = nil,
+        usage_notes = "",
+        testing = "",
+        website = nil,
+        source = nil,
+        built_by = "unknown",
+        build_date = "unknown",
+        prepend_paths = {},
+        env_vars = {},
+        required_modules = {},
+        container_image_path = nil,
+        shell_functions = {},
+        conflicts = {}
+    }
+
+    -- Fill in any missing fields from defaults
+    for k, v in pairs(defaults) do
+        if M[k] == nil then
+            M[k] = v
+        end
+    end
+
+    -- Make website and source name default to each other if only one is provided
+    if M.source == nil and M.website ~= nil then
+        M.source = M.website
+    elseif M.website == nil and M.source ~= nil then
+        M.website = M.source
+    end
+
+    -- If still missing, fallback to "N/A"
+    M.source = M.source or "N/A"
+    M.website = M.website or "N/A"
+
+    local module_path = myFileName()
+
+    -- Attempt to infer module name/version from its file path
+    local name, version = module_path:match(".*/([^/]+)/([^/]+)%.lua$")
+    M.name = M.name or name
+    M.version = M.version or version
+
+    if mode() == "load" then
+        if not M.name then
+            LmodError("Module name could not be determined! Set M.name explicitly or fix modulefile path.")
+        end
+
+        if not M.version then
+            LmodError("Module version could not be determined! Set M.version explicitly or fix modulefile path.")
+        end
+    end
+
+    -- Determine install path
+    M.install_path = M.install_path or
+        (module_path:match("/software/el9/modulefiles/") and pathJoin("/software/el9/apps", M.name, M.version)) or
+        (module_path:match("/reference/containers/modulefiles/") and pathJoin("/reference/containers", M.name, M.version))
+
+    if mode() == "load" then
+        if not M.install_path then
+            LmodError("Installation directory could not be determined! Set M.install_path explicitly or fix modulefile path.")
+        elseif not isDir(M.install_path) then
+            LmodError(("Installation directory does not exist: %s"):format(M.install_path))
+        end
+    end
+
+    local dir_env_map = {
+        bin = {"PATH"},
+        include = {"CPATH", "CMAKE_INCLUDE_PATH"},
+        lib = {"LIBRARY_PATH", "LD_LIBRARY_PATH", "CMAKE_LIBRARY_PATH"},
+        lib64 = {"LIBRARY_PATH", "LD_LIBRARY_PATH", "CMAKE_LIBRARY_PATH"},
+        man = {"MANPATH"},
+        ["share/man"] = {"MANPATH"},
+        ["site-packages"] = {"PYTHONPATH"}
+    }
+
+    if M.install_path then
+        for subdir, env_vars in pairs(dir_env_map) do
+            local full_path = pathJoin(M.install_path, subdir)
+            if isDir(full_path) then
+                if mode() == "load" then
+                    for _, var in ipairs(env_vars) do
+                        prepend_path(var, full_path)
+                    end
+                elseif mode() == "unload" then
+                    for _, var in ipairs(env_vars) do
+                        remove_path(var, full_path)
+                    end
+                end
+            end
+        end
+    end
+
+    -- Add custom paths if provided
+    if next(M.prepend_paths) then
+        for var, value in pairs(M.prepend_paths) do
+            if isDir(value) then
+                if mode() == "load" then
+                    prepend_path(var, value)
+                elseif mode() == "unload" then
+                    remove_path(var, value)
+                end
+            elseif mode() == "load" then
+                LmodWarning(("Path does not exist: %s"):format(value))
+            end
+        end
+    end
+
+    -- Set any module-specific environment variables
+    if next(M.env_vars) then
+        for var, value in pairs(M.env_vars) do
+            if mode() == "load" then
+                setenv(var, value)
+            elseif mode() == "unload" then
+                unsetenv(var)
+            end
+        end
+    end
+
+    -- Set any module-specific conflicts
+    if mode() == "load" and next(M.conflicts) then
+        for _, module in ipairs(M.conflicts) do
+            conflict(module)
+        end
+    end
+
+    -- Load any module dependencies
+    if mode() == "load" and next(M.required_modules) then
+        for _, module in ipairs(M.required_modules) do
+            if not isloaded(module) then
+                if not isAvail(module) then
+                    LmodError(("Required dependency module not found: %s"):format(module))
+                end
+                depends_on(module)
+                LmodMessage(("Loaded dependency module: %s"):format(module))
+            end
+        end
+    end
+
+    -- Similarly unload any module dependencies
+    -- lmod normally handles this automatically with depends_on()
+    -- but this may not work correctly using this script
+    -- so the dependencies are managed manually
+    -- if mode() == "unload" and next(M.required_modules) then
+    --     for _, module in ipairs(M.required_modules) do
+    --         if isloaded(module) then
+    --             unload(module)
+    --             LmodMessage(("Unloaded dependency module: %s"):format(module))
+    --         end
+    --     end
+    -- end
+
+    -- Create shell functions for containers
+    if mode() == "load" and next(M.shell_functions) then
+        if not isloaded("apptainer") then
+            depends_on("apptainer")
+        end
+
+        if not isloaded("apptainer") then
+            LmodError("Required module 'apptainer' could not be loaded; cannot create container shell functions")
+        end
+
+        local containers_dir = os.getenv("CONTAINERS") or LmodError("Environment variable CONTAINERS is not set; cannot find container files")
+        local image_path = M.container_image_path or LmodError("container_image_path not set; cannot determine container image")
+
+        if not isFile(image_path) then
+            LmodError("image_path is not a valid file")
+        end
+
+        for _, cmd in ipairs(M.shell_functions) do
+            local bash_cmd = ('apptainer exec %s %s "$@"'):format(image_path, cmd)
+            local csh_cmd = ('apptainer exec %s %s $*'):format(image_path, cmd)
+            set_shell_function(cmd, bash_cmd, csh_cmd)
+        end
+    end
+
+    if mode() == "load" then
+        LmodMessage(("Loaded module: %s/%s"):format(M.name, M.version))
+    end
+
+    if mode() == "unload" then
+        LmodMessage(("Unloaded module: %s/%s"):format(M.name, M.version))
+    end
+
+    local bold = "\27[1m"
+    local cyan = "\27[36m"
+    local reset = "\27[0m"
+
+    -- Default help message template
+    help(([[
+%s%s%s version %s%s
+
+%sUsage Notes:%s
+------------
+%s
+%s
+
+%sDepends On:%s
+-----------
+%s
+
+%sTesting:%s
+--------
+module load %s/%s
+%s
+
+--
+%sWebsite:%s %s
+ %sSource:%s %s
+   %sTest:%s See 'Testing' section above.
+--
+%sBuilt By:%s %s
+%sBuild Date:%s %s
+    ]]):format(
+    bold, cyan, M.name, M.version, reset, -- Title
+
+    cyan, reset, -- Usage Notes
+    M.name,
+    M.usage_notes,
+
+    cyan, reset, -- Depends On
+    table.concat(M.required_modules, "\n"),
+
+    cyan, reset, -- Testing
+    M.name, M.version,
+    M.testing,
+
+    cyan, reset, M.website, -- Website
+    cyan, reset, M.source, -- Source
+    cyan, reset, -- Test
+
+    cyan, reset, M.built_by, --Built By
+    cyan, reset, M.build_date -- Build Date
+    ))
+
+    -- Provide description if missing
+    if not M.description then
+        M.description = ("%s is ..."):format(M.name)
+    end
+
+    whatis(("Name: %s"):format(M.name))
+    whatis(("Description: %s"):format(M.description))
+    whatis(("Version: %s"):format(M.version))
+end

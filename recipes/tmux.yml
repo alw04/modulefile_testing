@@ -1,0 +1,11 @@
+---
+defaults:
+  build_system: "autotools"
+  default_version: "3.6a"
+
+versions:
+  "3.6a":
+    url: "https://github.com/tmux/tmux/releases/download/3.6a/tmux-3.6a.tar.gz"
+
+  "3.3a":
+    url: "https://github.com/tmux/tmux/releases/download/3.3a/tmux-3.3a.tar.gz"

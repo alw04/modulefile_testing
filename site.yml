@@ -1,0 +1,8 @@
+---
+- hosts: localhost
+  become: true
+  tasks:
+    - name: "Install {{ software }}"
+      install:
+        recipe: "{{ software }}"
+        version: "{{ version | default(omit) }}"
