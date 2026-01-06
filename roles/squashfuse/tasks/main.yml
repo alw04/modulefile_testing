@@ -1,2 +1,2 @@
 ---
-- import_tasks: roles/software_install/tasks/entry.yml
+- include_tasks: roles/software_install/tasks/entry.yml

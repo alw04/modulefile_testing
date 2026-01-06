@@ -12,5 +12,9 @@
       dest: "{{ vars[name ~ '_modulefile_dir_path'] }}/default.lua"
       state: link
       force: yes
+
+  - name: "Mark {{ name }}/{{ vars[name ~ '_version'] }} as installed"
+    set_fact:
+      software_done: "{{ software_done + [ name ~ '/' ~ vars[name ~ '_version'] ] if name not in software_done else software_done }}"
     when: vars[name ~ '_version'] == vars.get(name ~ '_default_version')
   when: not vars[name ~ '_skip']

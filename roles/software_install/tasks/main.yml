@@ -1,6 +1,6 @@
 ---
 - name: "Begin install for {{ name }}/{{ vars.get(name ~ '_version', vars.get(name ~ '_default_version')) }}"
-  include_tasks: core.yml
+  include_tasks: pre_install.yml
 
 - block:
   - name: "Include install steps for {{ name }}/{{ vars[name ~ '_version'] }}"
@@ -9,7 +9,5 @@
     loop_control:
       loop_var: task
 
-  - include_tasks: create_modulefile.yml
-
-  - include_tasks: mark_installed.yml
+  - include_tasks: post_install.yml
   when: not vars.get(name ~ '_skip')

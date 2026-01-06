@@ -1,12 +1,18 @@
 ---
 - include_role:
-    name: software_dependencies
-  loop:
-    - { name: gmp, version: "6.2.1" }
-    - { name: mpfr, version: "4.2.0" }
-    - { name: mpc, version: "1.3.1" }
-  loop_control:
-    loop_var: gcc_dependencies
+    name: gmp
+  vars:
+    gmp_version: "6.2.1"
+
+- include_role:
+    name: mpfr
+  vars:
+    mpfr_version: "4.2.0"
+
+- include_role:
+    name: mpc
+  vars:
+    mpc_version: "1.3.1"
 
 - include_role:
     name: software_install

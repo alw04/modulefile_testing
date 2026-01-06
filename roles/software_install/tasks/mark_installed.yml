@@ -1,5 +1,0 @@
----
-- name: "Mark {{ name }}/{{ vars[name ~ '_version'] }} as installed"
-  set_fact:
-    software_done: "{{ software_done + [ name ~ '/' ~ vars[name ~ '_version'] ] if name not in software_done else software_done }}"
-  when: not vars[name ~ '_skip']

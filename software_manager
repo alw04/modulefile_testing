@@ -161,6 +161,70 @@ class SoftwareManager:
         self._open_editor(defaults)
         self._open_editor(version_file)
 
+    def remove(self, name: str, version: Optional[str] = None):
+        software_path = self._software_path(name)
+        if not software_path.is_dir():
+            print(f"Error: software '{name}' not found")
+            return
+
+        versions = self._get_versions(name)
+        default = self._get_default_version(name)
+
+        if version:
+            if version not in versions:
+                print(f"Error: version '{version}' not found for '{name}'")
+                self._print_versions(name, versions, default)
+                return
+
+            version_file = self._version_file(name, version)
+            print(f"Deleting version file: {version_file}")
+            version_file.unlink()
+
+            remaining_versions = self._get_versions(name)
+            if not remaining_versions:
+                confirm = input(f"'{name}' has no more versions. Remove entire software directory? [y/N]: ").lower()
+                if confirm == "y":
+                    print(f"Deleting software directory: {software_path}")
+                    for p in reversed(list(software_path.rglob("*"))):
+                        if p.is_file():
+                            p.unlink()
+                        else:
+                            p.rmdir()
+                    software_path.rmdir()
+                return
+
+            if version == default:
+                print(f"Deleted version was default for '{name}'")
+                if len(remaining_versions) == 1:
+                    new_default = remaining_versions[0]
+                    self.set_default(name, new_default)
+                    # print(f"Only one version remaining. Default version automatically set to '{new_default}'")
+                else:
+                    print("Select a new default version:")
+                    for idx, v in enumerate(remaining_versions, start=1):
+                        print(f"{idx}) {v}")
+                    while True:
+                        choice = input("Enter number of new default: ").strip()
+                        if choice.isdigit() and 1 <= int(choice) <= len(remaining_versions):
+                            new_default = remaining_versions[int(choice) - 1]
+                            self.set_default(name, new_default)
+                            break
+                        print("Invalid choice. Please enter a valid number.")
+            return
+
+        confirm = input(f"Are you sure you want to delete all versions and defaults for '{name}'? [y/N]: ").lower()
+        if confirm != "y":
+            print("Aborted")
+            return
+
+        print(f"Deleting software directory: {software_path}")
+        for p in reversed(list(software_path.rglob("*"))):
+            if p.is_file():
+                p.unlink()
+            else:
+                p.rmdir()
+        software_path.rmdir()
+
 
 def parse_args():
     parser = argparse.ArgumentParser(prog="software-manager", description="Manage software roles and versions")
@@ -174,6 +238,10 @@ def parse_args():
     add = sub.add_parser("add", help="Add software or a new version")
     add.add_argument("software", help="Software name")
     add.add_argument("version", help="Version to add")
+
+    remove = sub.add_parser("remove", help="Remove a software version or the entire software")
+    remove.add_argument("software", help="Software name to remove")
+    remove.add_argument("version", nargs="?", help="Version to remove (omit to remove all versions / entire software)")
 
     set_default = sub.add_parser("set-default", help="Set default version")
     set_default.add_argument("software", help="Software name")
@@ -199,6 +267,8 @@ def main():
         manager.show(args.software)
     elif args.command == "add":
         manager.add(args.software, args.version)
+    elif args.command == "remove":
+        manager.remove(args.software, args.version)
     elif args.command == "set-default":
         manager.set_default(args.software, args.version)
     elif args.command == "edit":

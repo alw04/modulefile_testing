@@ -1,6 +1,0 @@
----
-- set_fact:
-    "{{ lookup('vars', name ~ '_dependencies').name }}_version": "{{ lookup('vars', name ~ '_dependencies').version }}"
-
-- include_role:
-    name: "{{ lookup('vars', name ~ '_dependencies').name }}"
